@@ -1,0 +1,380 @@
+openapi: 3.0.2
+info:
+  title: KristyLessonRecords
+  description: |
+    ## Автоматическая система записи и обработки онлайн-уроков
+
+    ### Возможности:
+    - 🎥 Автоматическая запись уроков через Recall.ai
+    - 📝 Транскрипция через AssemblyAI
+    - 🤖 AI-обработка через YandexGPT
+    - 📚 Генерация учебных материалов
+  version: 1.0.0
+  contact:
+    name: KristyLessonRecords Support
+    email: support@kristylessons.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+  - url: https://api.kristylessons.com
+    description: Production server
+
+tags:
+  - name: Health
+    description: Проверка состояния сервиса
+  - name: Lessons
+    description: Управление уроками
+
+paths:
+  /:
+    get:
+      tags:
+        - Health
+      summary: Проверка состояния сервиса
+      description: Возвращает статус работы сервиса
+      operationId: root
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  service:
+                    type: string
+                    example: KristyLessonRecords
+
+  /lessons/record:
+    post:
+      tags:
+        - Lessons
+      summary: Начать запись урока
+      description: |
+        Запускает процесс записи онлайн-урока.
+        
+        После вызова этого эндпоинта:
+        1. Recall.ai бот присоединится к встрече
+        2. Начнётся запись аудио/видео
+        3. После окончания урока автоматически запустится транскрипция
+        4. AI обработает транскрипцию и создаст учебные материалы
+      operationId: start_recording
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecordLessonRequest"
+        required: true
+      responses:
+        "200":
+          description: Запись успешно начата
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LessonResponse"
+              example:
+                id: lesson_1234567890.123
+                status: recording
+                meeting_url: https://zoom.us/j/1234567890
+                lesson_type: chinese
+                created_at: "2024-01-20T10:30:00"
+                transcript_available: false
+                materials_available: false
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HTTPValidationError"
+        "500":
+          description: Ошибка при запуске записи
+
+  /lessons/{lesson_id}:
+    get:
+      tags:
+        - Lessons
+      summary: Получить информацию об уроке
+      description: Возвращает текущий статус и информацию об уроке
+      operationId: get_lesson
+      parameters:
+        - required: true
+          schema:
+            title: Lesson Id
+            type: string
+            description: ID урока
+            example: lesson_1234567890.123
+          name: lesson_id
+          in: path
+      responses:
+        "200":
+          description: Информация об уроке
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LessonResponse"
+        "404":
+          description: Урок не найден
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HTTPValidationError"
+
+  /lessons/{lesson_id}/transcript:
+    get:
+      tags:
+        - Lessons
+      summary: Получить транскрипцию урока
+      description: |
+        Возвращает полную транскрипцию урока с временными метками и распознанными спикерами.
+        
+        Транскрипция включает:
+        - Полный текст урока
+        - Сегменты с временными метками
+        - Информацию о спикерах
+        - Язык транскрипции
+      operationId: get_transcript
+      parameters:
+        - required: true
+          schema:
+            title: Lesson Id
+            type: string
+            description: ID урока
+          name: lesson_id
+          in: path
+      responses:
+        "200":
+          description: Транскрипция урока
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: transcript_123
+                  text:
+                    type: string
+                    example: "Преподаватель: Привет! Сегодня мы изучаем числа. На китайском один будет 一 (yī)..."
+                  segments:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        text:
+                          type: string
+                        start:
+                          type: number
+                        end:
+                          type: number
+                        speaker:
+                          type: string
+                  language:
+                    type: string
+                    example: ru
+                  duration:
+                    type: number
+                    example: 1800.0
+        "404":
+          description: Урок или транскрипция не найдены
+
+  /lessons/{lesson_id}/materials:
+    get:
+      tags:
+        - Lessons
+      summary: Получить учебные материалы
+      description: |
+        Возвращает сгенерированные AI учебные материалы на основе транскрипции урока.
+        
+        Материалы включают:
+        - **Исправленная транскрипция** - с добавленными иероглифами и пиньинь
+        - **Конспект урока** - структурированная информация о пройденном материале
+        - **Домашнее задание** - упражнения и задания для закрепления
+        - **Краткое описание** - что изучали на уроке
+        - **Словарь** - ключевая лексика с переводом
+      operationId: get_materials
+      parameters:
+        - required: true
+          schema:
+            title: Lesson Id
+            type: string
+            description: ID урока
+          name: lesson_id
+          in: path
+      responses:
+        "200":
+          description: Учебные материалы
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  lesson_id:
+                    type: string
+                  original_transcript:
+                    type: string
+                  corrected_transcript:
+                    type: string
+                  summary:
+                    type: string
+                  homework:
+                    type: string
+                  notes:
+                    type: string
+                  vocabulary:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        word:
+                          type: string
+                        pinyin:
+                          type: string
+                        translation:
+                          type: string
+                        example:
+                          type: string
+                  created_at:
+                    type: string
+                    format: date-time
+        "404":
+          description: Урок или материалы не найдены
+
+components:
+  schemas:
+    RecordLessonRequest:
+      title: RecordLessonRequest
+      required:
+        - meeting_url
+        - lesson_type
+      type: object
+      properties:
+        meeting_url:
+          title: Meeting Url
+          type: string
+          description: URL встречи (Zoom, Google Meet и т.д.)
+          example: https://zoom.us/j/1234567890
+        lesson_type:
+          title: Lesson Type
+          type: string
+          description: Тип урока
+          example: chinese
+          pattern: ^(chinese|english)$
+        student_id:
+          title: Student Id
+          type: string
+          description: ID студента
+          example: student_123
+        teacher_id:
+          title: Teacher Id
+          type: string
+          description: ID преподавателя
+          example: teacher_456
+        student_level:
+          title: Student Level
+          type: string
+          description: Уровень студента
+          example: beginner
+          pattern: ^(beginner|intermediate|advanced)$
+        metadata:
+          title: Metadata
+          type: object
+          description: Дополнительные метаданные
+          example:
+            topic: "Числа от 1 до 10"
+            lesson_number: 5
+      example:
+        meeting_url: https://zoom.us/j/1234567890
+        lesson_type: chinese
+        student_id: student_123
+        student_level: beginner
+        metadata:
+          topic: Базовые приветствия
+          lesson_number: 1
+
+    LessonResponse:
+      title: LessonResponse
+      required:
+        - id
+        - status
+        - meeting_url
+        - lesson_type
+        - created_at
+      type: object
+      properties:
+        id:
+          title: Id
+          type: string
+          description: Уникальный ID урока
+          example: lesson_1234567890.123
+        status:
+          title: Status
+          type: string
+          description: Статус обработки урока
+          example: recording
+          pattern: ^(recording|transcribing|processing|completed|failed)$
+        meeting_url:
+          title: Meeting Url
+          type: string
+          description: URL встречи
+          example: https://zoom.us/j/1234567890
+        lesson_type:
+          title: Lesson Type
+          type: string
+          description: Тип урока
+          example: chinese
+        created_at:
+          title: Created At
+          type: string
+          description: Время создания записи
+          format: date-time
+        transcript_available:
+          title: Transcript Available
+          type: boolean
+          description: Доступна ли транскрипция
+          default: false
+        materials_available:
+          title: Materials Available
+          type: boolean
+          description: Доступны ли учебные материалы
+          default: false
+
+    HTTPValidationError:
+      title: HTTPValidationError
+      type: object
+      properties:
+        detail:
+          title: Detail
+          type: array
+          items:
+            $ref: "#/components/schemas/ValidationError"
+
+    ValidationError:
+      title: ValidationError
+      required:
+        - loc
+        - msg
+        - type
+      type: object
+      properties:
+        loc:
+          title: Location
+          type: array
+          items:
+            anyOf:
+              - type: string
+              - type: integer
+        msg:
+          title: Message
+          type: string
+        type:
+          title: Error Type
+          type: string 

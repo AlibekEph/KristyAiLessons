@@ -1,0 +1,66 @@
+services:
+  app:
+    build: .
+    container_name: kristy_lesson_records
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./src:/app/src
+      - ./storage:/app/storage
+      - ./logs:/app/logs
+      - ./.env:/app/.env:ro
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - lesson_network
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: kristy_postgres
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: lesson_records
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - lesson_network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: kristy_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - lesson_network
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: kristy_nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - app
+    networks:
+      - lesson_network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  lesson_network:
+    driver: bridge 

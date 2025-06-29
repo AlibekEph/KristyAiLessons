@@ -1,0 +1,193 @@
+{
+  "info": {
+    "name": "KristyLessonRecords API",
+    "description": "Коллекция для тестирования API автоматической записи и обработки уроков",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/",
+          "host": ["{{base_url}}"],
+          "path": [""]
+        },
+        "description": "Проверка состояния сервиса"
+      }
+    },
+    {
+      "name": "Начать запись урока",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const response = pm.response.json();",
+              "pm.environment.set('lesson_id', response.id);",
+              "",
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response has lesson ID', function () {",
+              "    pm.expect(response).to.have.property('id');",
+              "});",
+              "",
+              "pm.test('Status is recording', function () {",
+              "    pm.expect(response.status).to.equal('recording');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"meeting_url\": \"https://zoom.us/j/1234567890\",\n  \"lesson_type\": \"chinese\",\n  \"student_id\": \"student_123\",\n  \"teacher_id\": \"teacher_456\",\n  \"student_level\": \"beginner\",\n  \"metadata\": {\n    \"topic\": \"Базовые приветствия на китайском\",\n    \"lesson_number\": 1\n  }\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/lessons/record",
+          "host": ["{{base_url}}"],
+          "path": ["lessons", "record"]
+        },
+        "description": "Запускает процесс записи онлайн-урока"
+      }
+    },
+    {
+      "name": "Получить информацию об уроке",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response has required fields', function () {",
+              "    const response = pm.response.json();",
+              "    pm.expect(response).to.have.property('id');",
+              "    pm.expect(response).to.have.property('status');",
+              "    pm.expect(response).to.have.property('transcript_available');",
+              "    pm.expect(response).to.have.property('materials_available');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/lessons/{{lesson_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["lessons", "{{lesson_id}}"]
+        },
+        "description": "Возвращает текущий статус и информацию об уроке"
+      }
+    },
+    {
+      "name": "Получить транскрипцию",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    pm.test('Response has transcript data', function () {",
+              "        const response = pm.response.json();",
+              "        pm.expect(response).to.have.property('text');",
+              "        pm.expect(response).to.have.property('segments');",
+              "        pm.expect(response).to.have.property('language');",
+              "    });",
+              "} else if (pm.response.code === 404) {",
+              "    console.log('Транскрипция еще не готова');",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/lessons/{{lesson_id}}/transcript",
+          "host": ["{{base_url}}"],
+          "path": ["lessons", "{{lesson_id}}", "transcript"]
+        },
+        "description": "Возвращает полную транскрипцию урока"
+      }
+    },
+    {
+      "name": "Получить учебные материалы",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    pm.test('Response has all materials', function () {",
+              "        const response = pm.response.json();",
+              "        pm.expect(response).to.have.property('corrected_transcript');",
+              "        pm.expect(response).to.have.property('summary');",
+              "        pm.expect(response).to.have.property('homework');",
+              "        pm.expect(response).to.have.property('vocabulary');",
+              "        pm.expect(response.vocabulary).to.be.an('array');",
+              "    });",
+              "} else if (pm.response.code === 404) {",
+              "    console.log('Материалы еще не готовы');",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/lessons/{{lesson_id}}/materials",
+          "host": ["{{base_url}}"],
+          "path": ["lessons", "{{lesson_id}}", "materials"]
+        },
+        "description": "Возвращает сгенерированные AI учебные материалы"
+      }
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    }
+  ]
+} 
