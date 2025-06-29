@@ -56,4 +56,84 @@ Thumbs.db
 htmlcov/
 
 # Docker
-docker-compose.override.yml 
+docker-compose.override.yml
+
+# Logs and temporary files
+logs/
+*.log
+*.log.*
+temp/
+tmp/
+.tmp/
+cache/
+.cache/
+
+# API request logs
+logs/api_requests/
+logs/webhooks/
+
+# Temporary processing files
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# Runtime files
+*.pid
+*.sock
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Editor temporary files
+.#*
+#*#
+.*.swp
+.*.swo
+*.orig
+
+# Python temporary files
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+.Python
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/

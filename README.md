@@ -31,13 +31,13 @@
 
 ## Использование
 
-API доступно по адресу `http://localhost:8000`
+API доступно по адресу `https://ai.dr-study.ru`
 
 ### Документация API
 
 После запуска сервиса доступна интерактивная документация:
-- **Swagger UI**: `http://localhost:8000/docs`
-- **ReDoc**: `http://localhost:8000/redoc`
+- **Swagger UI**: `https://ai.dr-study.ru/api/docs`
+- **ReDoc**: `https://ai.dr-study.ru/api/redoc`
 
 ### Основные эндпоинты
 

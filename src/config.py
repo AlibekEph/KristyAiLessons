@@ -12,15 +12,15 @@ class Settings(BaseSettings):
     APP_NAME: str = "KristyLessonRecords"
     APP_PORT: int = 8000
     APP_ENV: str = "development"
-    APP_URL: str = "http://localhost:8000"
+    APP_URL: str = "https://ai.dr-study.ru"
     
     # Database
-    DATABASE_URL: str = "postgresql://user:password@postgres:5432/lesson_records"
+    DATABASE_URL: str = "postgresql://user:password@localhost/db"
     REDIS_URL: str = "redis://redis:6379/0"
     
     # Recall.ai
     RECALL_API_KEY: str
-    RECALL_WEBHOOK_URL: str = "http://localhost:8000/webhooks/recall"
+    RECALL_WEBHOOK_URL: str = "https://ai.dr-study.ru/webhooks/recall"
     RECALL_REGION: str = "us-west-2"
     
     # AssemblyAI
@@ -46,8 +46,14 @@ class Settings(BaseSettings):
     class Config:
         # Проверяем сначала .env в контейнере, затем в корне проекта
         env_file = "/app/.env" if os.path.exists("/app/.env") else ".env"
+        env_file_encoding = "utf-8"
         case_sensitive = True
 
 
 # Create global settings instance
-settings = Settings() 
+settings = Settings()
+
+
+def get_settings() -> Settings:
+    """Get application settings"""
+    return settings 

@@ -1,7 +1,7 @@
 """Recording service interface"""
 
 from abc import ABC, abstractmethod
-from typing import Dict, Optional, Any
+from typing import Dict, Optional, Any, List
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -25,6 +25,7 @@ class RecordingSession:
     ended_at: Optional[datetime] = None
     recording_url: Optional[str] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
+    status_changes: List[Dict[str, Any]] = field(default_factory=list)
 
 
 class RecordingServiceInterface(ABC):
@@ -99,5 +100,18 @@ class RecordingServiceInterface(ABC):
             
         Returns:
             Updated RecordingSession object
+        """
+        pass
+    
+    @abstractmethod
+    async def get_bot_data(self, bot_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get bot data including media shortcuts
+        
+        Args:
+            bot_id: ID of the bot
+            
+        Returns:
+            Bot data dictionary or None if not found
         """
         pass 

@@ -28,17 +28,18 @@ async def test_recall_api():
         "Content-Type": "application/json"
     }
     
-    # Минимальный payload для теста
+    # Минимальный payload для теста согласно новой документации API v1.11
     # В документации указано, что meeting_url обязателен
     payload = {
         "meeting_url": "https://zoom.us/j/1234567890",  # Тестовый URL
         "bot_name": "Test Bot",
-        # Дополнительные параметры согласно нашей реализации
-        "transcription_options": {
-            "provider": "assembly_ai"
-        },
-        "recording": {
-            "mode": "speaker_view"
+        # Новая структура записи согласно API v1.11 (минимальная)
+        "recording_config": {
+            "transcript": {
+                "provider": {
+                    "meeting_captions": {}
+                }
+            }
         }
     }
     
@@ -98,7 +99,7 @@ async def test_our_service():
     async with aiohttp.ClientSession() as session:
         try:
             # Проверяем health check
-            async with session.get("http://localhost:8000/") as response:
+            async with session.get("https://ai.dr-study.ru/") as response:
                 if response.status == 200:
                     print("✅ Наш сервис работает")
                 else:
@@ -116,7 +117,7 @@ async def test_our_service():
             }
             
             async with session.post(
-                "http://localhost:8000/lessons/record",
+                "https://ai.dr-study.ru/lessons/record",
                 json=payload
             ) as response:
                 status = response.status

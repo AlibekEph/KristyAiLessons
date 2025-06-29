@@ -7,8 +7,8 @@ KristyLessonRecords предоставляет REST API для автомати�
 ## Swagger UI
 
 После запуска сервиса документация доступна по адресам:
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
+- Swagger UI: `https://ai.dr-study.ru/api/docs`
+- ReDoc: `https://ai.dr-study.ru/api/redoc`
 
 ## Аутентификация
 
@@ -17,7 +17,7 @@ KristyLessonRecords предоставляет REST API для автомати�
 ## Базовый URL
 
 ```
-http://localhost:8000
+https://ai.dr-study.ru
 ```
 
 ## Эндпоинты
@@ -168,6 +168,107 @@ http://localhost:8000
 }
 ```
 
+### 5. Получить список уроков (NEW!)
+
+**GET** `/lessons`
+
+Возвращает список уроков с пагинацией и фильтрацией.
+
+**Параметры запроса:**
+
+**Пагинация:**
+- `page` (int, по умолчанию 1) - Номер страницы
+- `page_size` (int, по умолчанию 20) - Размер страницы (максимум 100)
+- `order_by` (string, по умолчанию "created_at") - Поле для сортировки
+- `order_direction` (string, по умолчанию "desc") - Направление сортировки (asc/desc)
+
+**Фильтры:**
+- `status` (string) - Статус урока
+- `statuses` (array[string]) - Несколько статусов
+- `lesson_type` (string) - Тип урока (chinese/english)
+- `lesson_types` (array[string]) - Несколько типов уроков
+- `student_id` (string) - ID студента
+- `teacher_id` (string) - ID преподавателя
+- `created_after` (datetime) - Уроки созданные после даты
+- `created_before` (datetime) - Уроки созданные до даты
+- `started_after` (datetime) - Уроки начатые после даты
+- `started_before` (datetime) - Уроки начатые до даты
+- `search` (string) - Поиск по URL встречи и метаданным
+- `has_transcript` (boolean) - Есть ли транскрипция
+- `has_materials` (boolean) - Есть ли учебные материалы
+
+**Пример запроса:**
+```bash
+GET /lessons?page=1&page_size=10&status=completed&lesson_type=chinese&order_by=created_at&order_direction=desc
+```
+
+**Ответ (200 OK):**
+```json
+{
+  "items": [
+    {
+      "id": "lesson_1234567890.123",
+      "meeting_url": "https://zoom.us/j/1234567890",
+      "lesson_type": "chinese",
+      "student_id": "student_123",
+      "teacher_id": "teacher_456",
+      "status": "completed",
+      "created_at": "2024-01-20T10:30:00",
+      "started_at": "2024-01-20T10:35:00",
+      "ended_at": "2024-01-20T11:30:00",
+      "has_transcript": true,
+      "has_materials": true
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "page_size": 10,
+    "total_items": 25,
+    "total_pages": 3,
+    "has_next": true,
+    "has_previous": false
+  }
+}
+```
+
+### 6. Получить статистику уроков (NEW!)
+
+**GET** `/lessons/statistics`
+
+Возвращает статистику по урокам с возможностью фильтрации.
+
+**Параметры запроса (фильтры):**
+- `status` (string) - Фильтр по статусу
+- `lesson_type` (string) - Фильтр по типу урока
+- `student_id` (string) - Фильтр по ID студента
+- `teacher_id` (string) - Фильтр по ID преподавателя
+- `created_after` (datetime) - Уроки созданные после даты
+- `created_before` (datetime) - Уроки созданные до даты
+
+**Пример запроса:**
+```bash
+GET /lessons/statistics?lesson_type=chinese&created_after=2024-01-01T00:00:00
+```
+
+**Ответ (200 OK):**
+```json
+{
+  "total_lessons": 50,
+  "status_distribution": {
+    "completed": 35,
+    "processing": 5,
+    "recording": 3,
+    "failed": 2
+  },
+  "type_distribution": {
+    "chinese": 30,
+    "english": 20
+  },
+  "with_transcript": 40,
+  "with_materials": 35
+}
+```
+
 ## Примеры использования
 
 ### Python
@@ -177,7 +278,7 @@ import requests
 import time
 
 # Базовый URL
-BASE_URL = "http://localhost:8000"
+BASE_URL = "https://ai.dr-study.ru"
 
 # 1. Начать запись урока
 response = requests.post(
@@ -232,6 +333,36 @@ if lesson["materials_available"]:
     print("\n=== СЛОВАРЬ ===")
     for word in materials["vocabulary"]:
         print(f"{word['word']} ({word['pinyin']}) - {word['translation']}")
+
+# 5. Получить список всех уроков с фильтрацией (NEW!)
+response = requests.get(f"{BASE_URL}/lessons", params={
+    "page": 1,
+    "page_size": 10,
+    "status": "completed",
+    "lesson_type": "chinese",
+    "has_materials": True,
+    "order_by": "created_at",
+    "order_direction": "desc"
+})
+
+lessons_data = response.json()
+print(f"\nНайдено {lessons_data['meta']['total_items']} уроков")
+print(f"Страница {lessons_data['meta']['page']} из {lessons_data['meta']['total_pages']}")
+
+for lesson in lessons_data['items']:
+    print(f"- {lesson['id']}: {lesson['lesson_type']} ({lesson['status']})")
+
+# 6. Получить статистику (NEW!)
+response = requests.get(f"{BASE_URL}/lessons/statistics", params={
+    "lesson_type": "chinese",
+    "created_after": "2024-01-01T00:00:00"
+})
+
+stats = response.json()
+print(f"\nСтатистика:")
+print(f"Всего уроков: {stats['total_lessons']}")
+print(f"По статусам: {stats['status_distribution']}")
+print(f"С материалами: {stats['with_materials']}")
 ```
 
 ### JavaScript (Node.js)
@@ -239,7 +370,7 @@ if lesson["materials_available"]:
 ```javascript
 const axios = require('axios');
 
-const BASE_URL = 'http://localhost:8000';
+const BASE_URL = 'https://ai.dr-study.ru';
 
 async function recordAndProcessLesson() {
     try {
@@ -296,7 +427,7 @@ recordAndProcessLesson();
 
 ```bash
 # 1. Начать запись урока
-curl -X POST http://localhost:8000/lessons/record \
+curl -X POST https://ai.dr-study.ru/lessons/record \
   -H "Content-Type: application/json" \
   -d '{
     "meeting_url": "https://zoom.us/j/1234567890",
@@ -305,13 +436,22 @@ curl -X POST http://localhost:8000/lessons/record \
   }'
 
 # 2. Проверить статус
-curl http://localhost:8000/lessons/lesson_1234567890.123
+curl https://ai.dr-study.ru/lessons/lesson_1234567890.123
 
 # 3. Получить транскрипцию
-curl http://localhost:8000/lessons/lesson_1234567890.123/transcript
+curl https://ai.dr-study.ru/lessons/lesson_1234567890.123/transcript
 
 # 4. Получить учебные материалы
-curl http://localhost:8000/lessons/lesson_1234567890.123/materials
+curl https://ai.dr-study.ru/lessons/lesson_1234567890.123/materials
+
+# 5. Получить список уроков с фильтрацией (NEW!)
+curl "https://ai.dr-study.ru/lessons?page=1&page_size=10&status=completed&lesson_type=chinese&order_by=created_at&order_direction=desc"
+
+# 6. Получить список уроков с поиском (NEW!)
+curl "https://ai.dr-study.ru/lessons?search=zoom&has_materials=true"
+
+# 7. Получить статистику (NEW!)
+curl "https://ai.dr-study.ru/lessons/statistics?lesson_type=chinese&created_after=2024-01-01T00:00:00"
 ```
 
 ## Обработка ошибок
@@ -361,7 +501,7 @@ API использует стандартные HTTP коды ответов:
 
 **Пример запроса:**
 ```bash
-curl -X GET "http://localhost:8000/debug/api-logs?service=recall&limit=10"
+curl -X GET "https://ai.dr-study.ru/debug/api-logs?service=recall&limit=10"
 ```
 
 **Пример ответа:**

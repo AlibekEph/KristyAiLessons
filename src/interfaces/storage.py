@@ -1,10 +1,12 @@
-"""Storage service interface"""
+"""Storage service interface and data models."""
 
 from abc import ABC, abstractmethod
 from typing import Dict, Optional, Any, List, BinaryIO
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
+from pydantic import BaseModel
+import uuid
 
 
 class StorageType(Enum):
@@ -28,23 +30,26 @@ class StoredFile:
     url: Optional[str] = None
 
 
-@dataclass
-class Lesson:
-    """Lesson entity"""
-    id: str
+class Lesson(BaseModel):
+    id: uuid.UUID
     meeting_url: str
-    lesson_type: str  # "chinese", "english"
+    lesson_type: str
     student_id: Optional[str] = None
     teacher_id: Optional[str] = None
-    recording_session_id: Optional[str] = None
-    transcription_id: Optional[str] = None
-    materials_id: Optional[str] = None
-    status: str = "pending"
-    created_at: datetime = field(default_factory=datetime.now)
-    updated_at: datetime = field(default_factory=datetime.now)
+    status: Optional[str] = "pending"
+    recording_session_id: Optional[str] = None  # Deprecated, use recall_bot_id
+    recall_bot_id: Optional[str] = None  # Bot ID from Recall.ai API
+    recording_id: Optional[str] = None  # Recording ID from Recall.ai API
+    transcript_id: Optional[uuid.UUID] = None  # Transcript ID
+    created_at: datetime
     started_at: Optional[datetime] = None
     ended_at: Optional[datetime] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    lesson_metadata: Optional[Dict[str, Any]] = None
+    transcription_id: Optional[uuid.UUID] = None  # Deprecated, use transcript_id
+    materials_id: Optional[uuid.UUID] = None
+
+    class Config:
+        from_attributes = True
 
 
 class StorageServiceInterface(ABC):
@@ -139,25 +144,13 @@ class StorageServiceInterface(ABC):
         pass
     
     @abstractmethod
-    async def list_lessons(
-        self,
-        student_id: Optional[str] = None,
-        teacher_id: Optional[str] = None,
-        lesson_type: Optional[str] = None,
-        status: Optional[str] = None,
-        limit: int = 100,
-        offset: int = 0
-    ) -> List[Lesson]:
+    async def list_lessons(self, skip: int = 0, limit: int = 100) -> List[Lesson]:
         """
         List lessons with filters
         
         Args:
-            student_id: Filter by student
-            teacher_id: Filter by teacher
-            lesson_type: Filter by type
-            status: Filter by status
+            skip: Offset for pagination
             limit: Maximum number of results
-            offset: Offset for pagination
             
         Returns:
             List of lessons
@@ -188,5 +181,27 @@ class StorageServiceInterface(ABC):
             
         Returns:
             Dictionary or None
+        """
+        pass
+
+    @abstractmethod
+    async def save_transcript(self, lesson_id: str, transcript_data: dict) -> None:
+        """
+        Save transcript data
+        
+        Args:
+            lesson_id: ID of the lesson
+            transcript_data: Transcript data
+        """
+        pass
+
+    @abstractmethod
+    async def save_materials(self, lesson_id: str, materials_data: dict) -> None:
+        """
+        Save materials data
+        
+        Args:
+            lesson_id: ID of the lesson
+            materials_data: Materials data
         """
         pass 
